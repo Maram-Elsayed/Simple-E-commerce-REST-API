@@ -3,6 +3,7 @@ const bcrypt=require('bcrypt');
 const jwt = require("jsonwebtoken");
 
 const User= require('../models/user');
+const Cart = require("../models/shopping_carts");
 
 exports.signup=(req, res,next)=>{
     User.find({email: req.body.email})
@@ -25,21 +26,26 @@ exports.signup=(req, res,next)=>{
                     email: req.body.email,
                     password: hash
                   });
+                  req.userData=user._id;                            
                 user.save()
                 .then(result => {
                     console.log(result);
                     res.status(201).json({
                       message: "User created"
                     });
-                  })
+                  }
+                  )
                   .catch(err => {
                     console.log(err);
                     res.status(500).json({
                       error: err
                     });
                   });
+                  
             }
+            
             });
+            
 
         }
     });

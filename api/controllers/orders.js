@@ -3,11 +3,11 @@ const Product = require("../models/product");
 const User = require("../models/user");
 const mongoose = require("mongoose");
 
+
 exports.orders_get_all= (req, res, next) => {
     Order.find()
-      .select("product quantity _id email")
+      .select("product quantity")
       .populate('product','id name')
-      .populate('userId','email')
       .exec()
       .then(docs => {
         res.status(200).json({
@@ -17,7 +17,6 @@ exports.orders_get_all= (req, res, next) => {
               _id: doc._id,
               product: doc.product,
               quantity: doc.quantity,
-              user: doc.email,
               request: {
                 type: "GET",
                 url: "http://localhost:3000/orders/" + doc._id
@@ -32,15 +31,8 @@ exports.orders_get_all= (req, res, next) => {
         });
       });
   };
-
   exports.post_order= (req, res, next) => {
-    User.findById(req.body.userId)
-    .then(user=>{
-      if(!user){
-        return res.status(404).json({
-          message: "User not found"
-        });
-      }
+  
       Product.findById(req.body.productId)
       .then(product => {
         if (!product) {
@@ -52,7 +44,7 @@ exports.orders_get_all= (req, res, next) => {
           _id: mongoose.Types.ObjectId(),
           quantity: req.body.quantity,
           product: req.body.productId,
-          userId: req.body.userId
+          userId: req.userData.userId
         });
         return order.save();
       })
@@ -78,15 +70,7 @@ exports.orders_get_all= (req, res, next) => {
           error: err
         });
       });
-    })
-    .catch(err => {
-      console.log(err);
-      res.status(500).json({
-        error: err
-      });
-    });
-    
-      
+  
   };
 
   exports.order_get_by_id= (req, res, next) => {
