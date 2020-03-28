@@ -7,7 +7,7 @@ const Product = require("../models/product");
 
 exports.get_all_products=(req,res,next)=>{
     Product.find()
-    .select('name price _id productImage')
+    .select('name price _id productImage quantity')
     .exec()
     .then(docs=>{
       const response={
@@ -16,6 +16,7 @@ exports.get_all_products=(req,res,next)=>{
           return{
             name: doc.name,
             price: doc.price,
+            quantity: doc.quantity,
             productImage: doc.productImage,
             id: doc._id,
             request: {
@@ -91,10 +92,10 @@ exports.get_all_products=(req,res,next)=>{
   exports.get_product=(req,res,next)=>{
     const id=req.params.productId;
     Product.findById(id)
-   .select('name price _id productImage')
+   .select('name price _id productImage quantity')
     .exec()
     .then(doc =>{
-      console.log(doc);
+      console.log(doc.quantity);
       if(doc){
         res.status(200).json(doc);
       } else{

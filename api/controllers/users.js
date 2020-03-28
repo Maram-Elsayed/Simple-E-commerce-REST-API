@@ -26,13 +26,15 @@ exports.signup=(req, res,next)=>{
                     email: req.body.email,
                     password: hash
                   });
-                  req.userData=user._id;                            
+                  req.userData=user;  
+                  console.log({message: 'req.userData= '+req.userData});                         
                 user.save()
                 .then(result => {
-                    console.log(result);
-                    res.status(201).json({
+                   // console.log(result);
+                  /*  res.status(201).json({
                       message: "User created"
-                    });
+                    });*/
+                    next();
                   }
                   )
                   .catch(err => {
@@ -99,9 +101,7 @@ exports.login=(req, res, next) => {
     User.remove({ _id: req.params.userId })
       .exec()
       .then(result => {
-        res.status(200).json({
-          message: "User deleted"
-        });
+       next();
       })
       .catch(err => {
         console.log(err);
