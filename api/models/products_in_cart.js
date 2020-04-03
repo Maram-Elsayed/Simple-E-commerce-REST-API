@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+mongoose.set('debug', true);
 
 const product_In_CartSchema = mongoose.Schema({
    _id: mongoose.Schema.Types.ObjectId,

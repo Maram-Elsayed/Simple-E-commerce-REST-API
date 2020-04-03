@@ -1,8 +1,6 @@
 const mongoose = require("mongoose");
 const multer=require('multer');
 
-
-
 const Product = require("../models/product");
 
 exports.get_all_products=(req,res,next)=>{

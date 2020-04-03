@@ -1,25 +1,42 @@
 const Order = require("../models/order");
 const Product = require("../models/product");
-const User = require("../models/user");
+const OrderProduct=require("../models/products_in_order");
 const mongoose = require("mongoose");
 
 
+exports.display_order=(req, res) => {
+  OrderProduct.find({orderId: req.order._id})
+  .populate('productId','name')
+  .exec()
+  .then(docs=>{
+    const response={
+      count: docs.length,
+      orderId:req.order._id,
+      products:  docs.map(doc=>{
+        return{
+        product:doc.productId,
+        price: doc.productId.price,
+        quantity: doc.quantity,
+        total: doc.productId.price*doc.quantity
+        }
+      })
+    }
+  return res.status(200).json({response});
+  });
+};
+
 exports.orders_get_all= (req, res, next) => {
     Order.find()
-      .select("product quantity")
-      .populate('product','id name')
       .exec()
       .then(docs => {
         res.status(200).json({
           count: docs.length,
           orders: docs.map(doc => {
             return {
-              _id: doc._id,
-              product: doc.product,
-              quantity: doc.quantity,
+              OrderId: doc._id,
               request: {
                 type: "GET",
-                url: "http://localhost:3000/orders/" + doc._id
+                View_order_details: "http://localhost:3000/orders/" + doc._id
               }
             };
           })
@@ -31,52 +48,9 @@ exports.orders_get_all= (req, res, next) => {
         });
       });
   };
-  exports.post_order= (req, res, next) => {
-  
-      Product.findById(req.body.productId)
-      .then(product => {
-        if (!product) {
-          return res.status(404).json({
-            message: "Product not found"
-          });
-        }
-        const order = new Order({
-          _id: mongoose.Types.ObjectId(),
-          quantity: req.body.quantity,
-          product: req.body.productId,
-          userId: req.userData.userId
-        });
-        return order.save();
-      })
-      .then(result => {
-        console.log(result);   
-        res.status(201).json({
-          message: "Order stored",
-          createdOrder: {
-            _id: result._id,
-            product: result.product,
-            quantity: result.quantity,
-            userId: result.userId
-          },
-          request: {
-            type: "GET",
-            url: "http://localhost:3000/orders/" + result._id
-          }
-        });
-      })
-      .catch(err => {
-        console.log(err);
-        res.status(500).json({
-          error: err
-        });
-      });
-  
-  };
-
+ 
   exports.order_get_by_id= (req, res, next) => {
-    Order.findById(req.params.orderId).select('id product quantity')
-    .populate('product','id name price')
-    .populate('userId','email')
+    Order.findById(req.params.orderId)
       .exec()
       .then(order => {
         if (!order) {
@@ -84,14 +58,8 @@ exports.orders_get_all= (req, res, next) => {
             message: "Order not found"
           });
         }
-        res.status(200).json({
-          order: order,
-          total:order.product.price*order.quantity,
-          request: {
-            type: "GET",
-            url: "http://localhost:3000/orders"
-          }
-        });
+        req.order=order;
+        next();
       })
       .catch(err => {
         res.status(500).json({

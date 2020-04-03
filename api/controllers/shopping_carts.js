@@ -2,14 +2,16 @@ const Cart = require("../models/shopping_carts");
 const User = require("../models/user");
 const Product = require("../models/product");
 const CartProduct=require("../models/products_in_cart");
+const Order = require("../models/order");
+const OrderProduct=require("../models/products_in_order");
 const mongoose = require("mongoose");
+
 
 exports.create_cart=(req, res, next)=>{
   const cart=new Cart({
     _id: new mongoose.Types.ObjectId(),
     userId: req.userData._id
 });
-console.log({message: "userId= "+req.userData._id})
 cart
 .save()
 res.status(201).json({
@@ -17,47 +19,49 @@ res.status(201).json({
 });
 };
 
- 
-function display_cart_products(req,res,cart){
-  CartProduct.find({cartId:cart._id})
-  .populate('productId','name')
+exports.find_cart=(req, res, next)=>{
+  Cart.findOne({userId:req.userData.userId})
+  .exec()
+  .then(cart=>{
+    req.cart=cart;
+    next();
+  })
+  .catch(err => {
+    console.log(err);
+    res.status(500).json({
+      error: err
+    });
+  });
+};
+
+exports.get_cart_products=(req, res, next)=>{
+  CartProduct.find({cartId:req.cart._id})
+  .populate('productId','name price')
   .exec()
   .then(docs=>{
     if(docs.length<1){
       return res.status(200).json({message: "Shopping Cart is Empty"})
     }
+    req.cart_products=docs;
+    next();
+  })
+    
+};
+ 
+exports.display_cart_products=(req,res)=>{
     const response={
-      products: docs.map(doc=>{
+      products: req.cart_products.map(doc => {
         return{
         product:doc.productId,
-        quantity: doc.quantity
+        quantity: doc.quantity,
+        total_price:doc.productId.price*doc.quantity
         }
       })
     }
   return res.status(200).json({response})
-  })
-    
-
-};
-exports.get_cart=(req, res, next) => {
-  Cart.findOne({userId:req.userData.userId})
-  .exec()
-  .then(cart=>{  
-     return display_cart_products(req,res,cart); 
-   })
-   .catch(err => {
-        console.log(err);
-        res.status(500).json({
-          error: err
-        });
-      });
-    
 };
 
 exports.add_product_to_cart=(req, res, next) => {
-  Cart.findOne({userId:req.userData.userId})
-  .exec()
-  .then(cart=>{
   Product.findOne({_id:req.body.productId})
   .exec()
   .then(product=>{
@@ -71,7 +75,7 @@ exports.add_product_to_cart=(req, res, next) => {
         message: "Product Out Of Stock"
       });
     }
-    CartProduct.findOne({productId:req.body.productId, cartId: cart._id})
+    CartProduct.findOne({productId:req.body.productId, cartId: req.cart._id})
     .exec()
     .then(result=>{
       if(result){
@@ -81,56 +85,29 @@ exports.add_product_to_cart=(req, res, next) => {
           });
         }
         CartProduct.update({_id:result._id}, {quantity : result.quantity+1})
-        .exec()
-        .then(result=>{
-       console.log(result);
-          return display_cart_products(req,res,cart._id);      
-        })
       }
       else{
         const cartproduct=new CartProduct({
           _id: new mongoose.Types.ObjectId(),
           productId: req.body.productId,
-          cartId: cart._id
+          cartId: req.cart._id
         })
-    cartproduct
-    .save()
-    .then(result=>{
-      return display_cart_products(req,res,cart._id);          
-    })
-      .catch(err=>{
-        res.status(200).json({error: err});
-      });
+    cartproduct.save()
+    
       }
+     
     })
+    next();
   })
-  .catch(err=>{
+ .catch(err=>{
     console.log(err);
     res.status(200).json({error: err});
   });
-})
 };
 
 exports.remove_product_from_cart=(req, res, next) => {
-  Cart.findOne({ userId: req.userData.userId })
-  .exec()
-  .then(cart => {
-      CartProduct.remove({cartId:cart._id, productId:req.body.productId})
-      .exec()
-      .then(result=>{
-        return display_cart_products(req,res,cart);
-      })
-      .catch(err => {
-        console.log(err);
-        res.status(500).json({ error: err });
-      });
-  })
-  .catch(err => {
-    console.log(err);
-    res.status(500).json({
-      error: err
-    });
-  });
+  CartProduct.remove({cartId:req.cart._id, productId:req.body.productId})
+  next();
 };
 
 exports.delete_cart=(req, res, next) => {
@@ -150,9 +127,6 @@ exports.delete_cart=(req, res, next) => {
 };
 
 exports.edit_product_quantity=(req, res, next) => {
-  Cart.findOne({userId:req.userData.userId})
-  .exec()
-  .then(cart=>{
   Product.findOne({_id:req.params.productId})
   .exec()
   .then(product=>{
@@ -161,7 +135,7 @@ exports.edit_product_quantity=(req, res, next) => {
         message: "Invalid product id"
       });
     }    
-    CartProduct.findOne({productId:req.params.productId, cartId: cart._id})
+    CartProduct.findOne({productId:req.params.productId, cartId: req.cart._id})
     .exec()
     .then(result=>{
       if(result){
@@ -175,7 +149,7 @@ exports.edit_product_quantity=(req, res, next) => {
         .exec()
         .then(result1=>{
        console.log(result1);
-          return display_cart_products(req,res,cart._id);      
+       next();
         })
       }
       else{
@@ -187,5 +161,37 @@ exports.edit_product_quantity=(req, res, next) => {
     console.log(err);
     res.status(200).json({error: err});
   });
-})
 };
+
+exports.checkout=(req, res, next) => {
+  const order=new Order({
+    _id: new mongoose.Types.ObjectId(),
+    userId: req.userData.userId
+  });
+  
+  order.save()
+  .then(result=>{
+    req.cart_products.map(doc => {
+      const order_product=new OrderProduct({
+        _id: new mongoose.Types.ObjectId(),
+        productId: doc.productId._id,
+        quantity: doc.quantity,
+        orderId: result._id
+      })
+     
+      order_product.save()
+   })
+   return res.status(200).json({message: "Checkout Completed successfully. View order details: ",
+                               request: {
+                                type: "GET",
+                                View_order_details: "http://localhost:3000/orders/" + result._id
+                              }
+
+  })
+})
+  .catch(err=>{
+    console.log(err);
+    res.status(200).json({error: err});
+  });
+};
+
