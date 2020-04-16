@@ -93,9 +93,10 @@ exports.get_all_products=(req,res,next)=>{
    .select('name price _id productImage quantity')
     .exec()
     .then(doc =>{
-      console.log(doc.quantity);
       if(doc){
-        res.status(200).json(doc);
+        console.log(doc.quantity);
+        return res.status(200).json(doc);
+
       } else{
         res.status(404).json({message: 'Product Not Found'});
       }

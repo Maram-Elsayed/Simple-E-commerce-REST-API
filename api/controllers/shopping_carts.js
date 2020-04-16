@@ -54,7 +54,7 @@ exports.display_cart_products=(req,res)=>{
         return{
         product:doc.productId,
         quantity: doc.quantity,
-        total_price:doc.productId.price*doc.quantity
+        total_price:doc.total_price
         }
       })
     }
@@ -84,20 +84,25 @@ exports.add_product_to_cart=(req, res, next) => {
             message: "Requested Quantity is Unavailabe"
           });
         }
-        CartProduct.update({_id:result._id}, {quantity : result.quantity+1})
+        CartProduct.update({_id:result._id}, {quantity : result.quantity+1, total_price: (result.quantity+1)*product.price})
+        .exec()
+        next();
       }
       else{
         const cartproduct=new CartProduct({
           _id: new mongoose.Types.ObjectId(),
           productId: req.body.productId,
-          cartId: req.cart._id
+          cartId: req.cart._id,
+          total_price: product.price
         })
     cartproduct.save()
+    next();
     
       }
+      
      
     })
-    next();
+    
   })
  .catch(err=>{
     console.log(err);
@@ -106,7 +111,10 @@ exports.add_product_to_cart=(req, res, next) => {
 };
 
 exports.remove_product_from_cart=(req, res, next) => {
+  console.log(req.body.productId);
   CartProduct.remove({cartId:req.cart._id, productId:req.body.productId})
+  .exec()
+ 
   next();
 };
 
@@ -114,6 +122,7 @@ exports.delete_cart=(req, res, next) => {
   Cart.remove({ userId: req.params.userId })
   .exec()
   .then(result => {
+    CartProduct.remove({cartId: req.params.userId}).exec()
     res.status(200).json({
       message: "Cart and user deleted"
     });
@@ -145,7 +154,7 @@ exports.edit_product_quantity=(req, res, next) => {
           });
         }
         console.log(result);
-        CartProduct.updateOne({_id:result._id}, {quantity : req.body.quantity})
+        CartProduct.updateOne({_id:result._id}, {quantity : req.body.quantity, total_price: req.body.quantity*product.price})
         .exec()
         .then(result1=>{
        console.log(result1);
@@ -172,26 +181,37 @@ exports.checkout=(req, res, next) => {
   order.save()
   .then(result=>{
     req.cart_products.map(doc => {
+      Product.findOneAndUpdate({_id:doc.productId._id},{$inc: {quantity: -doc.quantity}})
+      .exec()
+      .then(item=>{
       const order_product=new OrderProduct({
         _id: new mongoose.Types.ObjectId(),
         productId: doc.productId._id,
         quantity: doc.quantity,
+        total_price:doc.total_price,
         orderId: result._id
-      })
-     
+      })    
       order_product.save()
-   })
-   return res.status(200).json({message: "Checkout Completed successfully. View order details: ",
-                               request: {
-                                type: "GET",
-                                View_order_details: "http://localhost:3000/orders/" + result._id
-                              }
 
+     // Product.updateOne({_id:doc.productId._id}, {quantity : product.quantity-doc.quantity}).exec()
+      console.log(item.quantity)
+    })
+    .catch(err=>{
+      console.log(err);
+      return res.status(200).json({error: "product "+doc.productId+" not found"});
+    });
+   })
+   return res.status(200).json(
+     {message: "Checkout Completed successfully. View order details: ",
+      request: {
+      type: "GET",
+      View_order_details: "http://localhost:3000/orders/" + result._id
+    }
   })
-})
-  .catch(err=>{
-    console.log(err);
-    res.status(200).json({error: err});
-  });
+  })
+    .catch(err=>{
+      console.log(err);
+      res.status(200).json({error: err});
+    });
 };
 

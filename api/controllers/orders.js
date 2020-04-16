@@ -5,8 +5,13 @@ const mongoose = require("mongoose");
 
 
 exports.display_order=(req, res) => {
+  OrderProduct.aggregate([{$match:{orderId: req.order._id}},
+    { $group:{_id: '$orderId',totalAmount: { $sum:  "$total_price"  }}}])
+  .exec()
+  .then(result=>{
+    console.log(result[0])
   OrderProduct.find({orderId: req.order._id})
-  .populate('productId','name')
+  .populate('productId','name price')
   .exec()
   .then(docs=>{
     const response={
@@ -15,14 +20,16 @@ exports.display_order=(req, res) => {
       products:  docs.map(doc=>{
         return{
         product:doc.productId,
-        price: doc.productId.price,
         quantity: doc.quantity,
-        total: doc.productId.price*doc.quantity
+        price: doc.total_price,
+        
         }
+       
       })
     }
-  return res.status(200).json({response});
+  return res.status(200).json({response, total: result[0].totalAmount});
   });
+})
 };
 
 exports.orders_get_all= (req, res, next) => {

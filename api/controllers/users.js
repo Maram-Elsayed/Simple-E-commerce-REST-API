@@ -30,10 +30,7 @@ exports.signup=(req, res,next)=>{
                   console.log({message: 'req.userData= '+req.userData});                         
                 user.save()
                 .then(result => {
-                   // console.log(result);
-                  /*  res.status(201).json({
-                      message: "User created"
-                    });*/
+                  
                     next();
                   }
                   )
@@ -73,10 +70,11 @@ exports.login=(req, res, next) => {
             const token = jwt.sign(
               {
                 email: user[0].email,
-                userId: user[0]._id
+                userId: user[0]._id,
+                admin: 0
               },process.env.MONGO_ATLAS_PW ,
               {
-                  expiresIn: "1h"
+                  expiresIn: "24h"
               }
             );
             return res.status(200).json({

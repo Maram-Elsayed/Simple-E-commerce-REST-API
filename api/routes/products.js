@@ -3,6 +3,7 @@ const router = express.Router();
 const multer=require('multer');
 const checkAuth=require('../middleware/check-auth');
 const ProductsController=require('../controllers/products');
+const checkAdmin=require('../middleware/check-admin');
 
 const storage = multer.diskStorage({
   destination: function(req, file, cb) {
@@ -31,12 +32,12 @@ fileFilter: fileFilter
 
 router.get('/', ProductsController.get_all_products);
 
-router.post("/",checkAuth,upload.single('productImage'), ProductsController.add_product);
+router.post("/",checkAuth,checkAdmin,upload.single('productImage'), ProductsController.add_product);
 
 router.get('/:productId',ProductsController.get_product);
 
-router.patch('/:productId' ,checkAuth, ProductsController.edit_product);
+router.patch('/:productId' ,checkAuth, checkAdmin,ProductsController.edit_product);
 
-router.delete('/:productId',checkAuth, ProductsController.delete_product);
+router.delete('/:productId',checkAuth, checkAdmin,ProductsController.delete_product);
 
 module.exports=router;
