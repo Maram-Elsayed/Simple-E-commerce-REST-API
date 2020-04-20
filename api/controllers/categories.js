@@ -49,6 +49,7 @@ exports.create_category=(req, res, next)=>{
         name: req.body.name,
         parentId: req.parentId
     });
+    console.log(category);
     category.save()
     res.status(201).json({
     message: "Category created",
@@ -108,6 +109,52 @@ exports.display_category_products=(req,res)=>{
   return res.status(200).json({response})
 };
 
+
+exports.view_all_categories=(req, res, next)=>{
+  Category.find()
+  .exec()
+  .then(docs=>{
+    const response={
+    catgeories: docs.map(doc=>{
+      return{
+        id:doc._id,
+        name:doc.name
+        }
+      })
+    }  
+  return res.status(200).json({response})
+  })
+  .catch(err => {
+    console.log(err);
+    res.status(500).json({
+      error: err
+    });
+  });
+};
+
+exports.view_subcategories=(req, res, next)=>{
+  Category.find({parentId:req.params.categoryId})
+  .populate('parentId','name')
+  .exec()
+  .then(docs=>{
+    const response={
+    catgeory: docs.parentId,
+    catgeories: docs.map(doc=>{
+      return{
+        id:doc._id,
+        name:doc.name
+        }
+      })
+    }  
+  return res.status(200).json({response})
+  })
+  .catch(err => {
+    console.log(err);
+    res.status(500).json({
+      error: err
+    });
+  });
+};
 
 exports.delete_category=(req, res, next) => {
   Category.remove({ userId: req.params.categoryId })

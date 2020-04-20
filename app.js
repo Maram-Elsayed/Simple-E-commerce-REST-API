@@ -42,7 +42,7 @@ process.env.MONGO_ATLAS_PW
   app.use("/users", userRoutes);
   app.use("/admins", adminRoutes);
   app.use("/cart", cartRoutes);
-  app.use("/category", categoryRoutes);
+  app.use("/categories", categoryRoutes);
   
   app.use((req, res, next) => {
     const error = new Error("Not found");

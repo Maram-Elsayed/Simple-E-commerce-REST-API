@@ -12,4 +12,8 @@ router.get("/:categoryId",checkAuth,CategoryController.getCategory ,CategoryCont
 
 router.delete("/:categoryId",checkAuth, checkAdmin,CategoryController.delete_category);
 
+router.get("/",checkAuth, CategoryController.view_all_categories);
+
+router.get("/category-list/:categoryId",checkAuth, CategoryController.view_subcategories);
+
 module.exports = router;
