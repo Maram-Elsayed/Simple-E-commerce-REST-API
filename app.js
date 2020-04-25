@@ -10,7 +10,7 @@ const userRoutes = require("./api/routes/users");
 const adminRoutes = require("./api/routes/admins");
 const cartRoutes = require("./api/routes/shopping_carts");
 const categoryRoutes = require("./api/routes/categories");
-
+const searchRoutes = require("./api/routes/search");
 
 mongoose.connect('mongodb+srv://node-shop:'+
 process.env.MONGO_ATLAS_PW 
@@ -43,6 +43,7 @@ process.env.MONGO_ATLAS_PW
   app.use("/admins", adminRoutes);
   app.use("/cart", cartRoutes);
   app.use("/categories", categoryRoutes);
+  app.use("/search", searchRoutes);
   
   app.use((req, res, next) => {
     const error = new Error("Not found");

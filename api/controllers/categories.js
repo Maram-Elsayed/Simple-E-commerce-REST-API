@@ -103,6 +103,10 @@ exports.display_category_products=(req,res)=>{
         return{
         product:doc.productId,
         quantity: doc.price,
+         request: {
+              type: 'GET',
+              url: 'http://localhost:3000/products/'+doc._id
+            }
         }
       })
     }

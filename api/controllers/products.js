@@ -24,11 +24,7 @@ exports.get_all_products=(req,res,next)=>{
           }
         })
       }
-    //  if(docs.length>0){
       res.status(200).json(response);
-    /*  }else{
-       res.status(200).json({message: 'No Enties Found'});
-      }*/
     })
     .catch(err => {
       console.log(err);
